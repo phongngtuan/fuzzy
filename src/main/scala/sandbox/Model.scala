@@ -138,14 +138,14 @@ object FuzzyMatch {
   }
 
 
-  def findMatches(fos: List[Fo], ccps: List[Ccp]): List[(List[Match], List[Fo], List[Ccp])] = {
-    println(s"fo: ${fos.size}, ccp: ${ccps.size}")
+  def findMatches(fos: List[Fo], ccps: List[Ccp]): (List[Match], List[Fo], List[Ccp]) = {
     val ans = findSplit(findSplitFosPrune)(ccps, fos).flatMap { case (matched1, fos1, ccps1) =>
       findSplit(findSplitCcpsPrune)(fos1, ccps1).map { case (matched2, ccps2, fos2) =>
         (matched2 ++ matched1, fos2, ccps2)
       }
     }
-    println(ans)
-    ans
+    ans.minBy { case (_, unmatchedFos, unmatchedCcps) =>
+      unmatchedFos.size + unmatchedCcps.size
+    }
   }
 }
