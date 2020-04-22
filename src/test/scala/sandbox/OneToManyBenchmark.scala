@@ -7,9 +7,9 @@ object RangeBenchmark
   val sizes = Gen.range("size")(5, 20, 1)
   val ranges = for {
     size <- sizes
-  } yield TestDataGen.testData(5, size)
+  } yield TestDataGen.splitCcps(5, size)
 
-  performance of "Range" in {
+  performance of "Find split ccps" in {
     measure method "findMatchingCcps" in {
       using(ranges) in { case (fo, ccps) =>
         FuzzyMatch.findSplitCcps(fo, ccps)

@@ -69,14 +69,14 @@ object FuzzyMatch {
     }
   }
 
-  def matchingOneCcpToManyFos(fos: List[Fo], ccps: List[Ccp]): List[(List[Match], List[Fo], List[Ccp])] = {
+  def findSplit[A, B](matchingAlgorithm: (A, List[B]) => List[(Match, List[B])])(merge: List[A], split: List[B]): List[(List[Match], List[B], List[A])] = {
     // split FO: 1 CCP to many FO
-    val zero: List[(List[Match], Fos, Ccps)] = List((Nil, fos, Nil))
-    val matchingResult = ccps.foldLeft(zero) { (acc, ccp) =>
-      acc.flatMap { case (matched, unmatchedFos, unmatchedCcps) =>
+    val zero: List[(List[Match], List[B], List[A])] = List((Nil, split, Nil))
+    val matchingResult = merge.foldLeft(zero) { (acc, a) =>
+      acc.flatMap { case (matched, bs, as) =>
         // not using this ccp at all
-        List((matched, unmatchedFos, ccp :: unmatchedCcps)) ++
-          findSplitFos(ccp, unmatchedFos).map { case (ma, fos) => (ma :: matched, fos, unmatchedCcps) }
+        List((matched, bs, a :: as)) ++
+          matchingAlgorithm(a, bs).map { case (ma, bs) => (ma :: matched, bs, as) }
       }
     }
     matchingResult
@@ -131,7 +131,7 @@ object FuzzyMatch {
       acc.flatMap { case (matched, unmatchedFos, unmatchedCcps) =>
         // not using this ccp at all
         List((matched, fo :: unmatchedFos, unmatchedCcps)) ++
-          findSplitCcps(fo, unmatchedCcps).map { case (ma, ccps) => (ma :: matched, unmatchedFos, ccps) }
+          findSplitCcpsPrune(fo, unmatchedCcps).map { case (ma, ccps) => (ma :: matched, unmatchedFos, ccps) }
       }
     }
     matchingResult
@@ -140,8 +140,8 @@ object FuzzyMatch {
 
   def findMatches(fos: List[Fo], ccps: List[Ccp]): List[(List[Match], List[Fo], List[Ccp])] = {
     println(s"fo: ${fos.size}, ccp: ${ccps.size}")
-    val ans = matchingOneCcpToManyFos(fos, ccps).flatMap { case (matched1, fos1, ccps1) =>
-      matchingOneFoToManyCcps(fos1, ccps1).map { case (matched2, fos2, ccps2) =>
+    val ans = findSplit(findSplitFosPrune)(ccps, fos).flatMap { case (matched1, fos1, ccps1) =>
+      findSplit(findSplitCcpsPrune)(fos1, ccps1).map { case (matched2, ccps2, fos2) =>
         (matched2 ++ matched1, fos2, ccps2)
       }
     }
