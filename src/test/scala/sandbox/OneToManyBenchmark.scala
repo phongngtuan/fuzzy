@@ -12,12 +12,12 @@ object RangeBenchmark
   performance of "Range" in {
     measure method "findMatchingCcps" in {
       using(ranges) in { case (fo, ccps) =>
-        FuzzyMatch.findMatchingCcps(fo, ccps)
+        FuzzyMatch.findSplitCcps(fo, ccps)
       }
     }
     measure method "findMatchingCcpsParallel" in {
       using(ranges) in { case (fo, ccps) =>
-        FuzzyMatch.findMatchingCcpsPrune(fo, ccps)
+        FuzzyMatch.findSplitCcpsPrune(fo, ccps)
       }
     }
   }

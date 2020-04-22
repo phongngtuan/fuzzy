@@ -46,15 +46,25 @@ object FuzzyMatchTest extends Properties("Matcher") {
     foMerges <- Gen.listOfN(foMergeCount, mergedFo.map { case (fo, ccps) => List(fo) -> ccps})
   } yield ccpMerges ++ foMerges
 
-  property("matching reference implementation") = forAll(mergedFo) { case (fo, ccps) =>
-    val a = FuzzyMatch.findMatchingCcps(fo, ccps).map { case (m, ccps) => (m.fos.toSet, m.ccps.toSet, ccps.toSet) }
-    val b = FuzzyMatch.findMatchingCcpsPrune(fo, ccps).map { case (m, ccps) => (m.fos.toSet, m.ccps.toSet, ccps.toSet) }
+  property("find split CCP reference implementation") = forAll(mergedFo) { case (fo, ccps) =>
+    val a = FuzzyMatch.findSplitCcps(fo, ccps).map { case (m, unused) => (m.fos.toSet, m.ccps.toSet, unused.toSet) }
+    val b = FuzzyMatch.findSplitCcpsPrune(fo, ccps).map { case (m, unused) => (m.fos.toSet, m.ccps.toSet, unused.toSet) }
     if (a != b) {
       println("> " + a)
       println("< " + b)
     }
     a == b
   }
+
+    property("find split FO reference implementation") = forAll(mergedCcp) { case (fos, ccp) =>
+      val a = FuzzyMatch.findSplitFos(ccp, fos).map { case (m, unused) => (m.fos.toSet, m.ccps.toSet, unused.toSet) }
+      val b = FuzzyMatch.findSplitFosPrune(ccp, fos).map { case (m, unused) => (m.fos.toSet, m.ccps.toSet, unused.toSet) }
+      if (a != b) {
+        println("> " + a)
+        println("< " + b)
+      }
+      a == b
+    }
 
 //
 //  property("detect merged FO") = forAll(mergedFo) { case (fos, ccps) =>
