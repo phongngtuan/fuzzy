@@ -56,6 +56,29 @@ object FuzzyMatch {
       .toList
   }
 
+  def findMatchingCcpsPrune(mergedExecution: Fo, candidates: Ccps): List[(Match, Ccps)] = {
+    val target = mergedExecution.economics
+    val ccpCandidates = candidates.sortBy(_.economics.quantity)
+
+    var ans = List[(Match, Ccps)]()
+    def loop(acc: Ccps, economics: Economics, candidates: Ccps, unused: Ccps): Unit = {
+      if (economics == target) {
+        ans = (Match(List(mergedExecution), acc), unused) :: ans
+      } else if (economics.quantity > target.quantity || economics.amount > target.amount) {
+        ()
+      } else {
+        candidates match {
+          case h :: t =>
+            loop(h :: acc, economics |+| h.economics, t, unused)
+            loop(acc, economics, t, h :: unused)
+          case _ => ()
+        }
+      }
+    }
+    loop(Nil, Monoid[Economics].empty, ccpCandidates, Nil)
+    ans
+  }
+
   def matchingOneFoToManyCcps(fos: List[Fo], ccps: List[Ccp]): List[(List[Match], List[Fo], List[Ccp])] = {
     val zero: List[(List[Match], Fos, Ccps)] = List((Nil, Nil, ccps))
     val matchingResult = fos.foldLeft(zero) { (acc, fo) =>
