@@ -38,40 +38,47 @@ object FuzzyMatchTest extends Properties("Matcher") {
 
   val singleMerge: Gen[(List[Fo], List[Ccp])] = Gen.oneOf(mergedCcp, mergedFo)
   val multipleMerge: Gen[List[(List[Fo], List[Ccp])]] = for {
-    ccpMergeCount <- Gen.chooseNum(2, mergeSize)
+    ccpMergeCount <- Gen.chooseNum(1, 5)
     ccpMerges <- Gen.listOfN(ccpMergeCount, mergedCcp)
-    foMergeCount <- Gen.chooseNum(2, mergeSize)
+    foMergeCount <- Gen.chooseNum(1, 5)
     foMerges <- Gen.listOfN(foMergeCount, mergedFo)
   } yield ccpMerges ++ foMerges
-
+//
 //  property("detect merged FO") = forAll(mergedFo) { case (fos, ccps) =>
-//    val (matched, remainingFo, remainingCcp) = FuzzyMatch.matchingOneFoToManyCcp(fos, ccps)
-//    matched.nonEmpty && remainingFo.isEmpty && remainingCcp.isEmpty
+//    val matchingResults = FuzzyMatch.matchingOneFoToManyCcps(fos, ccps)
+//    matchingResults.exists { case (matched, remainingFo, remainingCcp) =>
+//      matched.nonEmpty && remainingFo.isEmpty && remainingCcp.isEmpty
+//    }
 //  }
 //
-//  property("detec merge CCP") = forAll(mergedCcp) { case (fos, ccps) =>
-//    val (matched, remainingFo, remainingCcp) =FuzzyMatch.matchingOneCcpToManyFo(fos, ccps)
-//    matched.nonEmpty && remainingFo.isEmpty && remainingCcp.isEmpty
+//  property("detect merged CCP") = forAll(mergedCcp) { case (fos, ccps) =>
+//    val matchingResults = FuzzyMatch.matchingOneCcpToManyFos(fos, ccps)
+//    matchingResults.exists { case (matched, remainingFo, remainingCcp) =>
+//      matched.nonEmpty && remainingFo.isEmpty && remainingCcp.isEmpty
+//    }
 //  }
 //
 //  property("detect a split scenario") = forAll(singleMerge) { case (fos, ccps) =>
 //    FuzzyMatch.findMatches(fos, ccps).size == Math.min(fos.length, ccps.length)
 //  }
-//
+
+    property("multiple merges") = forAll(multipleMerge) { merges =>
+      val (fos, ccps) = merges.mapWithIndex { (merged, id) =>
+        val (fos, ccps) = merged
+        (fos.map(e => e.copy(id = s"${id}-${e.id}")), ccps.map(e => e.copy(s"${id}-${e.id}")))
+      }.unzip
+      val flattenFos = Random.shuffle(fos.flatten)
+      val flattenCcps = Random.shuffle(ccps.flatten)
+      val matchingResults = FuzzyMatch.findMatches(flattenFos, flattenCcps)
+      matchingResults.exists { case (matched, remainingFo, remainingCcp) =>
+        matched.nonEmpty && remainingFo.isEmpty && remainingCcp.isEmpty
+      }
+    }
+
 //  property("merged after a split must have save economics") = forAll(singleMerge) { case (fos, ccps) =>
 //    val merged = FuzzyMatch.findMatches(fos, ccps)
 //    merged.forall(m => m.fos.map(_.economics).combineAll == m.ccps.map(_.economics).combineAll)
 //  }
-
-  property("multiple merges") = forAll(multipleMerge) { merges =>
-    val (fos, ccps) = merges.mapWithIndex { (merged, id) =>
-      val (fos, ccps) = merged
-      (fos.map(e => e.copy(id = s"${id}-${e.id}")), ccps.map(e => e.copy(s"${id}-${e.id}")))
-    }.unzip
-    val flattenFos = Random.shuffle(fos.flatten)
-    val flattenCcps = Random.shuffle(ccps.flatten)
-    FuzzyMatch.findMatches(flattenFos, flattenCcps).size == merges.size
-  }
 
   //
 //  property("detect a split scenario with extra ccp") = forAll(singleMerge) { case (fos, ccps) =>
